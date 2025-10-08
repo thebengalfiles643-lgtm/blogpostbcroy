@@ -1,44 +1,39 @@
-import NextAuth from 'next-auth'
-import Credentials from 'next-auth/providers/credentials'
-import { compare } from 'bcryptjs'
+import { NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/mongodb'
-import { User } from '@/models/User'
+import { Post } from '@/models/Post'
+import type { IPost } from '@/models/Post'
+import { getServerSession } from 'next-auth'
+import { updatePostSchema } from '@/lib/validation'
+import { badRequest, unauthorized, notFound } from '@/lib/errors'
 
-const handler = NextAuth({
-  session: { strategy: 'jwt' },
-  providers: [
-    Credentials({
-      name: 'Credentials',
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
-        await connectToDatabase()
-        const user = await User.findOne({ email: credentials.email })
-        if (!user?.passwordHash) return null
-        const ok = await compare(credentials.password, user.passwordHash)
-        if (!ok) return null
-        return { id: String(user._id), email: user.email, name: user.name, image: user.image, role: user.role }
-      },
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = (user as any).role || 'user'
-      }
-      return token
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        ;(session.user as any).id = token.sub
-        ;(session.user as any).role = (token as any).role
-      }
-      return session
-    },
-  },
-})
+export async function GET(_: Request, { params }: { params: { slug: string } }) {
+  await connectToDatabase()
+  const post = await Post.findOne({ slug: params.slug })
+    .populate('author', 'name image')
+    .lean<IPost | null>()
+  if (!post || !post.published) return notFound()
+  return NextResponse.json(post)
+}
 
-export { handler as GET, handler as POST }
+export async function PUT(req: Request, { params }: { params: { slug: string } }) {
+  const session = await getServerSession()
+  if (!session?.user) return unauthorized()
+  await connectToDatabase()
+  const json = await req.json()
+  const parsed = updatePostSchema.safeParse(json)
+  if (!parsed.success) return badRequest('Invalid input', parsed.error.flatten())
+  const update = { ...parsed.data }
+  if (update.published && !update.publishedAt) update.publishedAt = new Date()
+  const post = await Post.findOneAndUpdate({ slug: params.slug }, update, { new: true })
+  return NextResponse.json(post)
+}
+
+export async function DELETE(_: Request, { params }: { params: { slug: string } }) {
+  const session = await getServerSession()
+  if (!session?.user) return unauthorized()
+  await connectToDatabase()
+  await Post.findOneAndDelete({ slug: params.slug })
+  return NextResponse.json({ ok: true })
+}
+
+
