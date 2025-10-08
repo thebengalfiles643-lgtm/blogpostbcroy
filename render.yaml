@@ -16,7 +16,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
 
-  - type: static
+  - type: static_site
     name: blog-frontend
     rootDir: frontend
     buildCommand: npm install && npm run build
@@ -27,3 +27,5 @@ services:
           type: web
           name: blog-backend
           property: url
+
+
