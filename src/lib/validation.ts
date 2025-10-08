@@ -18,6 +18,7 @@ export const createPostSchema = z.object({
 
 export const updatePostSchema = createPostSchema.partial().extend({
   published: z.boolean().optional(),
+  publishedAt: z.coerce.date().optional(),
 })
 
 export const commentSchema = z.object({
@@ -30,5 +31,6 @@ export const tagSchema = z.object({
   name: z.string().min(1).max(30),
   description: z.string().max(160).optional(),
 })
+
 
 
