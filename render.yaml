@@ -20,7 +20,7 @@ staticSites:
   - name: blog-frontend
     rootDir: frontend
     buildCommand: npm install && npm run build
-    staticPublishPath: dist
+    publishPath: dist
     envVars:
       - key: VITE_BACKEND_URL
         fromService:
