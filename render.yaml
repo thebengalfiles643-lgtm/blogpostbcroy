@@ -16,8 +16,8 @@ services:
       - key: JWT_SECRET
         generateValue: true
 
-  - type: static_site
-    name: blog-frontend
+staticSites:
+  - name: blog-frontend
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
