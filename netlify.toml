@@ -1,0 +1,22 @@
+version: 1
+build:
+  commands:
+    # Install Node.js dependencies
+    - npm ci
+    # Generate Prisma client
+    - npx prisma generate
+    # Build the Next.js application
+    - npm run build
+functions:
+  - pattern: "src/app/api/**/*"
+    runtime: "nodejs18.x"
+publish: ".next"
+environment:
+  - NEXTAUTH_URL
+  - NEXTAUTH_SECRET
+  - DATABASE_URL
+  - GOOGLE_CLIENT_ID
+  - GOOGLE_CLIENT_SECRET
+  - GITHUB_ID
+  - GITHUB_SECRET
+  - ADMIN_EMAIL
